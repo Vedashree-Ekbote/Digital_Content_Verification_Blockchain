@@ -9,15 +9,13 @@
   <body>
     <div class="card">
         <div class="card-body">
-            <form>
+            <form action="/login" method="POST">
                 <h3>Content creator Login</h3>
                 <div class="mb-3">
-                    <label for="exampleInputUserName1" class="form-label">User Name</label>
-                    <input type="text" class="form-control" id="exampleInputUserName1">
+                  <input type="text" class="form-control" id="exampleInputUserName1" name="username" placeholder="username">
                   </div>
                 <div class="mb-3">
-                  <label for="exampleInputPassword1" class="form-label">Password</label>
-                  <input type="password" class="form-control" id="exampleInputPassword1">
+                  <input type="password" class="form-control" id="exampleInputPassword1" name="password" placeholder="password">
                 </div>
                 <p>Don't Have an Account? <a href="/Register">Register</a></p>
                 <button type="submit" class="btn btn-primary">login</button>
