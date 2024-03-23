@@ -10,13 +10,10 @@
     <div class="container">
       <div class="card">
         <div class="card-body">
-          <h3>Upload Content</h3>
-          <form method='post' action='/upload_content'>
+          <h3>Upload Content to verify</h3>
+          <form method='post' action='/verify_content'>
             <div class="mb-3">
               <input type="file" class="form-control" id="content" placeholder="Upload your content" name="content" required>
-            </div>
-            <div class="mb-3">
-              <input type="text" class="form-control" id="username" placeholder="Username" name="username" required>
             </div>
             <button type="submit" class="btn btn-primary">Upload</button>
           </form>
