@@ -44,8 +44,24 @@ app.get("/upload_content", (req, res) => {
     res.sendFile(path.join(__dirname, 'templates', 'ContentUpload.html')); 
 });
 
+app.get("/modify", (req, res) => {
+    res.sendFile(path.join(__dirname, 'templates', 'modify.html')); 
+});
+
 app.get("/verify_content", (req, res) => {
     res.sendFile(path.join(__dirname, 'templates', 'verifyContent.html')); 
+});
+
+app.get("/content_upload_reciept", (req, res) => {
+    res.sendFile(path.join(__dirname, 'templates', 'content_upload_reciept.html')); 
+});
+
+app.get("/content_verify_reciept", (req, res) => {
+    res.sendFile(path.join(__dirname, 'templates', 'content_upload_reciept.html')); 
+});
+
+app.get("/logout", (req, res) => {
+    res.sendFile(path.join(__dirname, 'templates', 'Home.html')); 
 });
 
 app.post('/register', async (req, res) => {
@@ -102,7 +118,8 @@ app.post('/verify_content', async (req, res) => {
             if (result.length >= 2 && result[1] !== undefined && result[2] !== undefined) {
                 // Convert the timestamp to a string
                 const timestampString = result[2].toString();
-                res.status(200).json({ message: 'Content verified successfully!', username: result[1], timestamp: timestampString });
+                // res.status(200).json({ message: 'Content verified successfully!', username: result[1], timestamp: timestampString });
+                res.status(200).render('content_verify_reciept.html', { username:result[1], timestamp:timestampString  });
             } else {
                 res.status(500).json({ message: 'Username or timestamp not found in result' });
             }
@@ -124,13 +141,13 @@ app.post('/upload_content', async (req, res) => {
         const timestamp = Date.now();
         // Get the account private key
         const privateKey = '1500db2e66772ede80254bd00d3b3cf6023b1f0b002d7506c5807bed295510c0'; // private key
-
+        const gasPrice = await web3.eth.getGasPrice();
         // Create a new transaction object
         const txObject = {
             to: contractAddress,
             data: contractInstance.methods.registerContent(hashKey, username,timestamp).encodeABI(),
             gasLimit: web3.utils.toHex(200000), // Specify gas limit
-            gasPrice: web3.utils.toHex(web3.utils.toWei('0', 'gwei')), // Specify gas price
+            gasPrice: web3.utils.toHex(gasPrice), // Specify gas price
             nonce: await web3.eth.getTransactionCount('0x0b3dC35bEA50439E3800c590C141775d2Fd54592') // Get the nonce
         };
 
@@ -144,7 +161,8 @@ app.post('/upload_content', async (req, res) => {
 
         console.log('Content registered successfully!');
         console.log('Hash Key:', hashKey); // Print hash key to console
-        res.status(200).json({ message: 'Content registered successfully!', transactionHash: receipt.transactionHash });
+        res.status(200).render('content_upload_reciept.html', { hashKey, username, timestamp });
+
     } catch (error) {
         console.error('Error uploading content:', error);
         res.status(500).json({ message: 'Internal server error' });
