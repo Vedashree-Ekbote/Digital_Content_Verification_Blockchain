@@ -4,20 +4,32 @@ const bodyParser = require('body-parser');
 const Creator = require('./models/contentcreatormodel'); // content creator model
 const mongoose = require('./conn'); 
 const { Web3 } = require('web3');
-
 const app = express();
-const PORT = process.env.PORT || 3000;
+// const exphbs = require('express-handlebars');
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
-app.use("/templates", express.static(path.join(__dirname, "templates")));
-app.use(express.static(path.join(__dirname, "templates")));
+// app.use("/public", express.static(path.join(__dirname, "public")));
+// app.use(express.static(path.join(__dirname, "public")));
+
+app.set("view engine", "hbs");
+app.set("views", path.join(__dirname, "views"));
+
+const PORT = process.env.PORT || 3000;
+
+// app.set('views', path.join(__dirname, 'views'));
+// // Use exphbs.engine instead of exphbs()
+// app.engine('handlebars', exphbs.engine);
+// app.set('view engine', 'handlebars');
+
+// app.use(express.json());
 
 const providerUrl = 'https://eth-sepolia.g.alchemy.com/v2/RuE83N5-YIkfrP_hDuYLKb6IDBNmJE-s'; 
 const web3 = new Web3(providerUrl);
 
+
 const ContentRegistryArtifact = require('./artifacts/contracts/ContentVerifier.sol/ContentRegistry.json');
-const contractAddress = '0x7212c8739e732E66208b06175c2bbF26DdC1a377';  
+const contractAddress = '0x4f59238c0Ee1f339f7fD4A6266590ca9a247e54D';  
 const contractInstance = new web3.eth.Contract(ContentRegistryArtifact.abi, contractAddress);
 
 // Function to generate hash key
@@ -28,40 +40,61 @@ function generateHash(data) {
     return hash.digest('hex');
 }
 
+async function getExistingContentHashKeys() {
+    try {
+        const result = await contractInstance.methods.getExistingContentHashKeys().call();
+        return result;
+    } catch (error) {
+        console.error('Error retrieving existing content hash keys:', error);
+        return [];
+    }
+}
+
+
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, 'templates', 'Home.html')); 
+    res.render('Home');
 });
 
 app.get("/register", (req, res) => {
-    res.sendFile(path.join(__dirname, 'templates', 'Register.html')); 
+    res.render('Register');
 });
 
 app.get("/login", (req, res) => {
-    res.sendFile(path.join(__dirname, 'templates', 'CreatorLogin.html')); 
+    res.render('CreatorLogin');
 });
+
+app.get("/dashboard", (req, res) => {
+    res.render('dashboard');
+}); 
 
 app.get("/upload_content", (req, res) => {
-    res.sendFile(path.join(__dirname, 'templates', 'ContentUpload.html')); 
+    res.render('ContentUpload');
 });
 
-app.get("/modify", (req, res) => {
-    res.sendFile(path.join(__dirname, 'templates', 'modify.html')); 
+app.get("/modify", async (req, res) => {
+    try {
+        const contentHashKeys = await getExistingContentHashKeys();
+        res.render('modify', { contentHashKeys });
+    } catch (error) {
+        console.error('Error rendering modify form:', error);
+        res.status(500).send('Internal server error');
+    }
 });
 
 app.get("/verify_content", (req, res) => {
-    res.sendFile(path.join(__dirname, 'templates', 'verifyContent.html')); 
+    res.render('verifyContent'); 
 });
 
-app.get("/content_upload_reciept", (req, res) => {
-    res.sendFile(path.join(__dirname, 'templates', 'content_upload_reciept.html')); 
+app.get("/content_upload_receipt", (req, res) => {
+    res.render('content_upload_receipt');
 });
 
-app.get("/content_verify_reciept", (req, res) => {
-    res.sendFile(path.join(__dirname, 'templates', 'content_upload_reciept.html')); 
+app.get("/content_verify_recipt", (req, res) => {
+    res.render('content_verify_recipt');
 });
 
 app.get("/logout", (req, res) => {
-    res.sendFile(path.join(__dirname, 'templates', 'Home.html')); 
+    res.render('Home'); 
 });
 
 app.post('/register', async (req, res) => {
@@ -89,7 +122,7 @@ app.post('/login', async (req, res) => {
         if (existingUser) {
             if (existingUser.password === password) { 
                 console.log('User logged in successfully!');
-                res.redirect("/upload_content")
+                res.redirect("/dashboard");
             } else {
                 return res.status(400).json({ message: 'Invalid password' }); 
             }
@@ -102,50 +135,67 @@ app.post('/login', async (req, res) => {
     }
 });
 
-app.post('/verify_content', async (req, res) => {
-    try {
-        const { content } = req.body;
-
-        // Generate hash key for the provided content
-        const hashKey = generateHash(content);
-        console.log('Hash Key:', hashKey);
-        // Call the contract method to verify the content
-        const result = await contractInstance.methods.verifyContent(hashKey).call();
-
-        if (result[0] !== 'Invalid content') {
-            console.log('Content verified successfully!');
-            // Check if the result array contains the username and timestamp
-            if (result.length >= 2 && result[1] !== undefined && result[2] !== undefined) {
-                // Convert the timestamp to a string
-                const timestampString = result[2].toString();
-                // res.status(200).json({ message: 'Content verified successfully!', username: result[1], timestamp: timestampString });
-                res.status(200).render('content_verify_reciept.html', { username:result[1], timestamp:timestampString  });
-            } else {
-                res.status(500).json({ message: 'Username or timestamp not found in result' });
-            }
-        } else {
-            res.status(400).json({ message: 'Invalid content' });
-        }
-    } catch (error) {
-        console.error('Error verifying content:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
-});
-
+// Upload content route
 app.post('/upload_content', async (req, res) => {
     try {
         const { content, username } = req.body;
 
-        // Generate hash key for the uploaded content
+        // Generate hash key and content hash for the uploaded content
         const hashKey = generateHash(content);
+        const contentHash = generateHash(content);
         const timestamp = Date.now();
+        
         // Get the account private key
         const privateKey = '1500db2e66772ede80254bd00d3b3cf6023b1f0b002d7506c5807bed295510c0'; // private key
         const gasPrice = await web3.eth.getGasPrice();
+        
         // Create a new transaction object
         const txObject = {
             to: contractAddress,
-            data: contractInstance.methods.registerContent(hashKey, username,timestamp).encodeABI(),
+            data: contractInstance.methods.registerContent(hashKey, username, contentHash, timestamp).encodeABI(),
+            gasLimit: web3.utils.toHex(400000), // Specify gas limit
+            gasPrice: web3.utils.toHex(gasPrice), // Specify gas price
+            nonce: await web3.eth.getTransactionCount('0x0b3dC35bEA50439E3800c590C141775d2Fd54592') // Get the nonce
+        };
+        
+        // Sign the transaction
+        const signedTx = await web3.eth.accounts.signTransaction(txObject, privateKey);
+        
+        // Send the signed transaction
+        const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
+
+        console.log("Transaction receipt:", receipt);
+        
+        console.log('Content registered successfully!');
+        console.log('Hash Key:', hashKey); // Print hash key to console
+        res.status(200).render('content_upload_receipt', { hashKey, username, timestamp });
+
+    } catch (error) {
+        console.error('Error uploading content:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+app.post('/modify', async (req, res) => {
+    try {
+        const { hashKey, newContent, username } = req.body;
+        if (!newContent) {
+            return res.status(400).json({ message: 'New content is required' });
+        }
+        const newHashKey = generateHash(newContent);
+        const timestamp = Date.now();
+
+        // Get the account private key
+        const privateKey = '1500db2e66772ede80254bd00d3b3cf6023b1f0b002d7506c5807bed295510c0'; 
+        const gasPrice = await web3.eth.getGasPrice();
+
+        // Calculate hash for new content
+        const newContentHash = generateHash(newContent);
+
+        // Create a new transaction object
+        const txObject = {
+            to: contractAddress,
+            data: contractInstance.methods.modifyContent(hashKey, newContentHash, username, timestamp).encodeABI(),
             gasLimit: web3.utils.toHex(200000), // Specify gas limit
             gasPrice: web3.utils.toHex(gasPrice), // Specify gas price
             nonce: await web3.eth.getTransactionCount('0x0b3dC35bEA50439E3800c590C141775d2Fd54592') // Get the nonce
@@ -159,15 +209,44 @@ app.post('/upload_content', async (req, res) => {
 
         console.log("Transaction receipt:", receipt);
 
-        console.log('Content registered successfully!');
-        console.log('Hash Key:', hashKey); // Print hash key to console
-        res.status(200).render('content_upload_reciept.html', { hashKey, username, timestamp });
-
+        console.log('Content modified successfully!');
+        console.log('New Hash Key:', newHashKey); // Print new hash key to console
+        res.status(200).json({ message: 'Content modified successfully!', newHashKey, username, timestamp });
     } catch (error) {
-        console.error('Error uploading content:', error);
+        console.error('Error modifying content:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
+app.post('/verify_content', async (req, res) => {
+    try {
+        const { content } = req.body;
+
+        // Generate hash key for the provided content
+        const hashKey = generateHash(content);
+        console.log('Hash Key:', hashKey);
+        
+        // Call the contract method to verify the content
+        const result = await contractInstance.methods.verifyContent(hashKey).call();
+
+        if (result[0] !== 'Invalid content') {
+            console.log('Content verified successfully!');
+            const timestampString = result[2].toString();
+                res.status(200).render('content_verify_recipt', { 
+                    username: result[1], 
+                    timestamp: timestampString,
+                    contentHash: result[3]
+                });
+
+        } else {
+            res.status(400).json({ message: 'Invalid content' });
+        }
+    } catch (error) {
+        console.error('Error verifying content:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 // Start the server
 app.listen(PORT, () => {
     console.log(`Server listening at http://localhost:${PORT}`);

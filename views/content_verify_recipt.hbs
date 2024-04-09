@@ -54,18 +54,23 @@
 </head>
 <body>
     <div class="container">
-        <h1>This is verified Content!</h1>
-        <p>Here is the ownership history!</p>
+        <h1>Content Verification Receipt</h1>
+        <p>This is Verified Content</p>
         <table>
             <tr>
-                <td>Username:</td>
-                <td>${username}</td>
+                <td>Author:</td>
+                <td>{{ username }}</td>
             </tr>
             <tr>
                 <td>Timestamp:</td>
-                <td>${timestamp}</td>
+                <td>{{ timestamp }}</td>
+            </tr>
+            <tr>
+                <td>Content Hash:</td>
+                <td>{{ contentHash }}</td>
             </tr>
         </table>
+        
           <p>Go to Home Page</p>
         <a href="/Home" class="logout-btn">Home</a>
     </div>
