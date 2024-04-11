@@ -29,7 +29,7 @@ const web3 = new Web3(providerUrl);
 
 
 const ContentRegistryArtifact = require('./artifacts/contracts/ContentVerifier.sol/ContentRegistry.json');
-const contractAddress = '0x4f59238c0Ee1f339f7fD4A6266590ca9a247e54D';  
+const contractAddress = '0x975673fb6103d0840C8AC1c84701519A4eea5373';  
 const contractInstance = new web3.eth.Contract(ContentRegistryArtifact.abi, contractAddress);
 
 // Function to generate hash key
@@ -200,6 +200,7 @@ app.post('/modify', async (req, res) => {
             gasPrice: web3.utils.toHex(gasPrice), // Specify gas price
             nonce: await web3.eth.getTransactionCount('0x0b3dC35bEA50439E3800c590C141775d2Fd54592') // Get the nonce
         };
+        
 
         // Sign the transaction
         const signedTx = await web3.eth.accounts.signTransaction(txObject, privateKey);
@@ -207,6 +208,14 @@ app.post('/modify', async (req, res) => {
         // Send the signed transaction
         const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
 
+        contractInstance.once('DebugModifyContent', (error, event) => {
+            if (error) {
+                console.error('Error emitting DebugModifyContent event:', error);
+            } else {
+                console.log('DebugModifyContent event emitted:', event.returnValues);
+            }
+        });
+        
         console.log("Transaction receipt:", receipt);
 
         console.log('Content modified successfully!');

@@ -30,6 +30,22 @@ contract ContentRegistry {
         emit ContentRegistered(_hashKey, _username, _timestamp);
     }
 
+    // function modifyContent(string memory _hashKey, string memory _newContentHash, string memory _username, uint256 _timestamp) external {
+    //     require(bytes(_hashKey).length > 0, "Hash key must not be empty");
+    //     require(bytes(_newContentHash).length > 0, "New content hash must not be empty");
+
+    //     bytes32 hashKeyBytes = keccak256(abi.encodePacked(_hashKey));
+    //     require(contentMap[hashKeyBytes].timestamp != 0, "Content not found");
+
+    //     require(keccak256(abi.encodePacked(contentMap[hashKeyBytes].username)) == keccak256(abi.encodePacked(_username)),
+    //         "Only the owner can modify the content");
+
+    //     contentMap[hashKeyBytes].timestamp = _timestamp;
+    //     contentMap[hashKeyBytes].contentHash = _newContentHash;
+    //     ownershipHistory[hashKeyBytes].push(Content(_timestamp, _username, _newContentHash)); // Update ownership history
+    //     emit ContentModified(_hashKey, _username, _timestamp);
+    // }
+
     function modifyContent(string memory _hashKey, string memory _newContentHash, string memory _username, uint256 _timestamp) external {
         require(bytes(_hashKey).length > 0, "Hash key must not be empty");
         require(bytes(_newContentHash).length > 0, "New content hash must not be empty");
@@ -40,12 +56,21 @@ contract ContentRegistry {
         require(keccak256(abi.encodePacked(contentMap[hashKeyBytes].username)) == keccak256(abi.encodePacked(_username)),
             "Only the owner can modify the content");
 
+        // Log debug information
+        emit DebugModifyContent("Hash key: ", _hashKey);
+        emit DebugModifyContent("Existing content hash: ", contentMap[hashKeyBytes].contentHash);
+        emit DebugModifyContent("New content hash: ", _newContentHash);
+
+        // Update content hash
         contentMap[hashKeyBytes].timestamp = _timestamp;
         contentMap[hashKeyBytes].contentHash = _newContentHash;
-        ownershipHistory[hashKeyBytes].push(Content(_timestamp, _username, _newContentHash)); // Update ownership history
+
+        // Log success message
         emit ContentModified(_hashKey, _username, _timestamp);
     }
 
+    // Event for debugging purposes
+    event DebugModifyContent(string message, string value);
     function verifyContent(string memory _hashKey) external view returns (string memory, string memory, uint256, string memory) {
         require(bytes(_hashKey).length > 0, "Hash key must not be empty");
         
