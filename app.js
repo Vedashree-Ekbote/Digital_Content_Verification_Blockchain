@@ -29,7 +29,7 @@ const web3 = new Web3(providerUrl);
 
 
 const ContentRegistryArtifact = require('./artifacts/contracts/ContentVerifier.sol/ContentRegistry.json');
-const contractAddress = '0x975673fb6103d0840C8AC1c84701519A4eea5373';  
+const contractAddress = 'Enter your contractadreess';  
 const contractInstance = new web3.eth.Contract(ContentRegistryArtifact.abi, contractAddress);
 
 // Function to generate hash key
@@ -146,7 +146,7 @@ app.post('/upload_content', async (req, res) => {
         const timestamp = Date.now();
         
         // Get the account private key
-        const privateKey = '1500db2e66772ede80254bd00d3b3cf6023b1f0b002d7506c5807bed295510c0'; // private key
+        const privateKey = 'Enter your pvt. key here'; // private key
         const gasPrice = await web3.eth.getGasPrice();
         
         // Create a new transaction object
@@ -186,7 +186,7 @@ app.post('/modify', async (req, res) => {
         const timestamp = Date.now();
 
         // Get the account private key
-        const privateKey = '1500db2e66772ede80254bd00d3b3cf6023b1f0b002d7506c5807bed295510c0'; 
+        const privateKey = 'Pvt key'; 
         const gasPrice = await web3.eth.getGasPrice();
 
         // Calculate hash for new content
